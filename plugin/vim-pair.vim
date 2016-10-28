@@ -1,17 +1,20 @@
 let g:Pairs = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" }
 
 for key in keys(g:Pairs)
-    execute 'inoremap ' . key . ' ' . key . g:Pairs[key] . '<Esc>i'
     if key != '"' && key != "'"
+        execute 'inoremap ' . key . ' ' . key . g:Pairs[key] . '<Esc>i'
         execute 'inoremap ' . g:Pairs[key] . ' <C-r>=ClosePair("' . g:Pairs[key] . '")<CR>'
+    else
+        if key == "'"
+            execute 'inoremap ' . key . ' <C-r>=CloseQuotes("' . g:Pairs[key] . '")<CR>'
+        else
+            execute "inoremap " . key . " <C-r>=CloseQuotes('" . g:Pairs[key] . "')<CR>"
+        end
     end
 endfor
 
 inoremap <BS> <C-r>=RemovePair()<CR>
 
-" TODO
-" If inside pair of quotes, do not allow another type of quotes
-"
 " If no text in pair (empty pair) remove whole pair
 function! RemovePair()
     let line = getline('.')
@@ -23,6 +26,19 @@ function! RemovePair()
         end
     end
     return "\<BS>"
+endfunction
+
+" Closes matching quote
+function! CloseQuotes(pressed)
+    let line = getline('.')
+    let col = col('.') - 2
+    let pattern = "[\'\"]"
+
+    " Only if no quotes on line and characters on line
+    if line[0:col] !~ pattern && line[col+1:-1] !~ pattern && line =~ "[:alnum:]"
+        return a:pressed . a:pressed . "\<Esc>i"
+    end
+    return a:pressed
 endfunction
 
 " Move right if closing pair and cursor is already on closing pair
